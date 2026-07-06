@@ -1,51 +1,61 @@
-# Ron Rush: Mahjong Tile Prediction Game
+# Ron Rush
 
-A polished, high-resolution Mahjong tile prediction game built with **Next.js**, **Tailwind CSS**, and **Framer Motion**.
+A fast mahjong tile prediction game. Read the table, call higher or lower, try not to blow up the dragons.
 
-## 🎮 Game Overview
+Built for [Indies on Solana IOS2](https://indiesonsolana.com).
 
-Strategic betting meets traditional Mahjong aesthetics. Predict whether the next hand's value will be higher or lower than the current one. Watch out for dynamic scaling—non-number tiles gain power as they win!
+## How it plays
 
-## 🚀 Getting Started
+You get a 5-tile hand. Add up the value. Bet whether the next hand lands **higher** or **lower**.
 
-### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
+- Number tiles (dots 1–9) are fixed — what you see is what you get.
+- Dragons and winds start at 5, but they **shift over time**. Show up in a winning hand and that tile gets stronger. Show up in a losing hand and it cools off.
+- The run ends when any dragon/wind hits **0 or 10**, or you burn through **3 deck reshuffles**.
 
-### Installation
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+One call per round. Runs are short. The table changes underneath you if you stop paying attention.
 
-## 🧠 AI Utilization & Collaboration
+**Scoring:** +100 on a correct call, -50 on a miss. Ties are neutral.
 
-This project is a prime example of how **Human-AI Collaboration** can drastically accelerate development while maintaining artisanal quality.
+## What's in the build right now
 
-### How the AI was Leveraged
-- **Rapid Prototyping**: The core game engine and state management (Zustand) were scaffolded by AI in minutes, allowing for immediate focus on game balance and "feel."
-- **Complex UI Refinement**: AI handled the intricate pixel-math required for the custom Mahjong spritesheets, including precise horizontal offsets and "1 Dots" alignment.
-- **Micro-Animations**: Utilizing Framer Motion, the AI implemented premium effects like 3D card tilts, pulsing "power-up" badges, and smooth hand transitions.
-- **Rule Verification**: The AI acted as a "Rule Engine Auditor," cross-referencing user-provided rules with the codebase to ensure $100\%$ compliance (e.g., verifying hand values and deck composition).
+Playable web prototype — full loop, no wallet needed yet.
 
-### Handwritten vs. AI-Utilized
-| Component | Primary Method | AI Contribution |
-| :--- | :--- | :--- |
-| **Game Engine** | AI-Assisted | Logic logic, shuffling, and win/loss calculations. |
-| **State Management** | AI-Assisted | Zustand store and persistence setup. |
-| **Mahjong Tile UI** | Collaborative | AI handled sprite math; Human provided assets and refined aesthetics. |
-| **Spritesheets/Assets** | Handwritten/External | Provided by the user to ensure a unique, cohesive visual style. |
-| **Game Board Layout** | Collaborative | AI implemented responsive gaps and hover effects; Human directed spacing and flow. |
+- Home screen with table preview and local leaderboard
+- Full game board: current hand, bet controls, deck stats, hand history
+- Dynamic tile values tracked live (dragons/winds heat up and cool down)
+- Run summary screen with high score entry
+- Local top-5 leaderboard (browser storage)
+- Mahjong tile sprites, table layout, hand transitions, score animations
 
-## 🛠 Tech Stack
-- **Framework**: Next.js 14
-- **Styling**: Tailwind CSS (Glassmorphism & Custom Animations)
-- **State**: Zustand (with Persist Middleware)
-- **Animations**: Framer Motion
-- **Icons**: Lucide React
+This is the game. It works end to end in the browser today.
+
+## What's shipping next
+
+Target: **Ron Rush v1.0 on Solana Mobile** during the IOS2 residency.
+
+- Wallet connect — your run, your wallet
+- Onchain score submission after each game
+- Weekly leaderboard players can actually compete on
+- Solana Mobile build + dApp Store listing on Seeker
+- Closed alpha with real players stress-testing the loop
+
+Blockchain stuff stays in the background. You play because the loop is fun, not because someone waved a token at you.
+
+## Run it locally
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+Needs Node 18+.
+
+## Stack
+
+Next.js · Tailwind · Framer Motion · Zustand
+
+## License
+
+MIT — see [LICENSE](LICENSE).
