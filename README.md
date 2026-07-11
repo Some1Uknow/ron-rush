@@ -36,13 +36,12 @@ This is a complete browser prototype. It works end to end with no wallet connect
 
 Target: **Ron Rush v1.0 on Solana Mobile** during the IOS2 residency.
 
-- Wallet connect — your run, your wallet
-- Onchain score submission after each game
-- Weekly leaderboard players can actually compete on
+- Weekly virtual leaderboard players can actually compete on
 - Solana Mobile build + dApp Store listing on Seeker
-- Closed alpha with real players stress-testing the loop
+- Closed alpha with real players stress-testing the loop and its balance
+- Optional wallet identity only, if introduced later — never wallet-funded wagers
 
-Blockchain stuff stays in the background. You play because the loop is fun, not because someone waved a token at you.
+Blockchain stays in the background. You play because the loop is fun, not because someone waved a token at you.
 
 ## Run it locally
 

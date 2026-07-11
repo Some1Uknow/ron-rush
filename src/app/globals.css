@@ -1579,6 +1579,25 @@ input {
 .dealer-lantern-left { left: 10%; }
 .dealer-lantern-right { right: 10%; }
 
+.sound-toggle {
+  position: absolute;
+  z-index: 8;
+  top: 28px;
+  right: 28px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: #f7dc9c;
+  background: rgba(3, 28, 18, .62);
+  border: 1px solid rgba(246,218,146,.18);
+  border-radius: 50%;
+  backdrop-filter: blur(7px);
+  transition: transform .15s ease, background .15s ease;
+}
+
+.sound-toggle:hover { transform: translateY(-2px); background: rgba(21, 77, 57, .8); }
+
 .table-objective {
   position: absolute;
   z-index: 3;
@@ -1856,6 +1875,7 @@ input {
   .table-objective strong { font-size: 3.1rem; }
   .table-objective small { display: none; }
   .honor-ledger { top: 14px; left: 12px; padding: 6px; }
+  .sound-toggle { top: 14px; right: 13px; width: 31px; height: 31px; }
   .honor-ledger-title { display: none; }
   .baseline-hand { bottom: 20px; width: 95%; gap: 3px; }
   .baseline-hand .mahjong-tile-live,

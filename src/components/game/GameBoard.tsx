@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Eye, Flame, LockKeyhole, Sparkles } from 'lucide-react';
+import { ArrowRight, Eye, Flame, LockKeyhole, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { HONOR_NAMES, Tile } from '@/lib/gameEngine';
+import { playParlorFeedback } from '@/lib/parlorFeedback';
 import { useGameStore } from '@/store/gameStore';
 import { BettingControls } from './BettingControls';
 import { DeckStats } from './DeckStats';
@@ -106,6 +107,13 @@ export function GameBoard() {
   const startReveal = useGameStore((state) => state.startReveal);
   const advanceReveal = useGameStore((state) => state.advanceReveal);
   const resolveRound = useGameStore((state) => state.resolveRound);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.localStorage.getItem('ron-rush-sound') !== 'off';
+  });
+  const previousPhase = useRef(phase);
+  const previousRevealIndex = useRef(revealIndex);
+  const previousResult = useRef(lastResult);
 
   useEffect(() => {
     if (phase !== 'locked') return undefined;
@@ -120,6 +128,25 @@ export function GameBoard() {
     return () => window.clearTimeout(timer);
   }, [advanceReveal, pendingRound, phase, revealIndex, resolveRound]);
 
+  useEffect(() => {
+    const didLock = phase === 'locked' && previousPhase.current !== 'locked';
+    if (didLock && soundEnabled) playParlorFeedback('lock');
+    previousPhase.current = phase;
+  }, [phase, soundEnabled]);
+
+  useEffect(() => {
+    const didRevealTile = phase === 'revealing' && revealIndex > previousRevealIndex.current;
+    if (didRevealTile && soundEnabled) playParlorFeedback('tile');
+    previousRevealIndex.current = revealIndex;
+  }, [phase, revealIndex, soundEnabled]);
+
+  useEffect(() => {
+    if (lastResult && previousResult.current !== lastResult && soundEnabled) {
+      playParlorFeedback(lastResult.result);
+    }
+    previousResult.current = lastResult;
+  }, [lastResult, soundEnabled]);
+
   if (!currentHand) return null;
 
   const dealerMood = phase === 'locked' || phase === 'revealing'
@@ -131,11 +158,26 @@ export function GameBoard() {
         : 'neutral';
   const isRevealState = Boolean(pendingRound);
 
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    window.localStorage.setItem('ron-rush-sound', next ? 'on' : 'off');
+  };
+
   return (
     <div className="dragon-parlor-layout">
       <section className="parlor-table-shell" aria-label="Dragon Parlor table">
         <div className={cn('parlor-table', phase === 'locked' && 'is-locked', phase === 'revealing' && 'is-revealing')}>
           <Dealer mood={dealerMood} />
+          <button
+            type="button"
+            className="sound-toggle"
+            aria-label={soundEnabled ? 'Mute table feedback' : 'Enable table feedback'}
+            aria-pressed={soundEnabled}
+            onClick={toggleSound}
+          >
+            {soundEnabled ? <Volume2 size={16} aria-hidden="true" /> : <VolumeX size={16} aria-hidden="true" />}
+          </button>
           <div className="parlor-smoke parlor-smoke-left" aria-hidden="true" />
           <div className="parlor-smoke parlor-smoke-right" aria-hidden="true" />
 
