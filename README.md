@@ -1,33 +1,36 @@
 # Ron Rush
 
-A fast mahjong tile prediction game. Read the table, call higher or lower, try not to blow up the dragons.
+A fast Mahjong-tile prediction game set in the Dragon Parlor. Read the wall, risk virtual chips, and beat the house before the table runs dry.
 
 Built for [Indies on Solana IOS2](https://indiesonsolana.com).
 
 ## How it plays
 
-You get a 5-tile hand. Add up the value. Bet whether the next hand lands **higher** or **lower**.
+You get a 5-tile hand. Add up the value, read the remaining wall, then call whether the next hand lands **higher** or **lower**.
 
 - Number tiles (dots 1–9) are fixed — what you see is what you get.
-- Dragons and winds start at 5, but they **shift over time**. Show up in a winning hand and that tile gets stronger. Show up in a losing hand and it cools off.
-- The run ends when any dragon/wind hits **0 or 10**, or you burn through **3 deck reshuffles**.
+- Dragons and winds start at 5, then shift between 1–9 after a win or loss. Their new value affects later odds.
+- Start with **1,000 virtual chips** and win as soon as you reach **2,500**.
+- A run lasts one 64-tile wall: you lose if you go broke or cannot reach the target within 11 calls.
+- Select a 10%, 25%, 50%, or all-in wager. The reward adjusts to the exact odds, so long shots pay more.
+- You get two Peeks and one Recut per run to make a difficult call less blind.
 
-One call per round. Runs are short. The table changes underneath you if you stop paying attention.
+Lock the bet, then watch all five tiles reveal one at a time. Ties return the wager; correct calls earn chips and misses cost the stake.
 
-**Scoring:** +100 on a correct call, -50 on a miss. Ties are neutral.
+Runs are intended to take 4–6 minutes and use virtual chips only — no wallet or token wagering is required.
 
 ## What's in the build right now
 
 Playable web prototype — full loop, no wallet needed yet.
 
-- Home screen with table preview and local leaderboard
-- Full game board: current hand, bet controls, deck stats, hand history
-- Dynamic tile values tracked live (dragons/winds heat up and cool down)
-- Run summary screen with high score entry
-- Local top-5 leaderboard (browser storage)
-- Mahjong tile sprites, table layout, hand transitions, score animations
+- Dragon Parlor home screen, dealer art, victory/defeat illustration states, and local leaderboard
+- Full game board: live odds, wager chips, Peek/Recut powers, wall status, honor heat, and table ledger
+- Exact without-replacement odds for every higher/lower call
+- Explicit lock → reveal → resolve state machine with a five-tile suspense sequence
+- Local top-5 records ranked by victory, ending bankroll, and speed
+- Original optimized WebP illustration assets and motion-first mobile layout
 
-This is the game. It works end to end in the browser today.
+This is a complete browser prototype. It works end to end with no wallet connection.
 
 ## What's shipping next
 

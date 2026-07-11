@@ -1,118 +1,97 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useGameStore } from '@/store/gameStore';
-import { useLeaderboardStore } from '@/store/leaderboardStore';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, Crown, Play, RotateCcw, Trophy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Trophy, RefreshCw, Home, ExternalLink } from 'lucide-react';
+import { useGameStore } from '@/store/gameStore';
+import { LeaderboardOutcome, useLeaderboardStore } from '@/store/leaderboardStore';
 
 export default function SummaryPage() {
-  const { score, gameOverReason, resetGame, status } = useGameStore();
-  const { isHighScore, addScore } = useLeaderboardStore();
+  const status = useGameStore((state) => state.status);
+  const gameOverReason = useGameStore((state) => state.gameOverReason);
+  const bankroll = useGameStore((state) => state.bankroll);
+  const round = useGameStore((state) => state.round);
+  const maxRounds = useGameStore((state) => state.maxRounds);
+  const startGame = useGameStore((state) => state.startGame);
+  const resetGame = useGameStore((state) => state.resetGame);
+  const isLeaderboardRun = useLeaderboardStore((state) => state.isLeaderboardRun);
+  const addRun = useLeaderboardStore((state) => state.addRun);
   const router = useRouter();
-
   const [name, setName] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [isHigh, setIsHigh] = useState(false);
+
+  const outcome: LeaderboardOutcome = gameOverReason === 'win_target' ? 'victory' : 'defeat';
 
   useEffect(() => {
     if (status !== 'game_over') {
-      router.push('/');
-    } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsHigh(isHighScore(score));
+      router.replace('/');
+      return;
     }
-  }, [status, score, isHighScore, router]);
+  }, [router, status]);
 
   if (status !== 'game_over') return null;
 
-  const handleSubmitScore = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (name.trim()) {
-      addScore(name.trim(), score);
-      setSubmitted(true);
-    }
+  const isHighRun = isLeaderboardRun(bankroll, round, outcome);
+
+  const isVictory = outcome === 'victory';
+  const headline = isVictory ? 'You broke the house.' : 'The wall took you.';
+  const detail = isVictory
+    ? `You reached the target with ${bankroll.toLocaleString()} chips in ${round} hands.`
+    : gameOverReason === 'loss_bankroll'
+      ? 'Your stack is empty. The house keeps the table.'
+      : `The final hand fell before you reached 2,500 chips.`;
+
+  const submitScore = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!name.trim() || submitted) return;
+    addRun({ name: name.trim(), endingBankroll: bankroll, rounds: round, outcome });
+    setSubmitted(true);
   };
 
-  const handlePlayAgain = () => {
+  const playAgain = () => {
+    startGame();
+    router.push('/game');
+  };
+
+  const leaveTable = () => {
     resetGame();
     router.push('/');
   };
 
-  // Determine message based on reason
-  let reasonMessage = '';
-  if (gameOverReason === 'loss_value_bounds') {
-    reasonMessage = 'A tile value reached its limit (0 or 10)!';
-  } else if (gameOverReason === 'loss_empty_deck') {
-    reasonMessage = 'The deck ran out of reshuffles!';
-  } else {
-    reasonMessage = 'Game Over!';
-  }
-
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-[3rem] shadow-2xl border border-gray-100 relative overflow-hidden">
-        
-        {/* Decorative Top */}
-        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-rose-500/10 to-transparent pointer-events-none"></div>
+    <main className={`run-summary ${isVictory ? 'summary-victory' : 'summary-defeat'}`}>
+      <div className="summary-illustration" aria-hidden="true" />
+      <div className="summary-shade" aria-hidden="true" />
+      <section className="summary-card-v2">
+        <div className="summary-emblem">{isVictory ? <Crown size={31} aria-hidden="true" /> : <Trophy size={31} aria-hidden="true" />}</div>
+        <p className="summary-kicker">{isVictory ? 'Dragon Parlor victory' : 'Run complete'}</p>
+        <h1>{headline}</h1>
+        <p className="summary-detail">{detail}</p>
 
-        <div className="text-center mb-8 relative z-10">
-          <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter drop-shadow-sm mb-2">Game Over</h1>
-          <p className="text-rose-600 font-bold">{reasonMessage}</p>
+        <div className="summary-stats">
+          <span><small>ending stack</small><strong>{bankroll.toLocaleString()}</strong></span>
+          <span><small>hands played</small><strong>{round}/{maxRounds}</strong></span>
+          <span><small>target</small><strong>2,500</strong></span>
         </div>
 
-        <div className="bg-emerald-50 rounded-3xl p-6 text-center shadow-inner mb-8">
-          <p className="text-sm text-emerald-800 font-semibold uppercase tracking-widest mb-1">Final Score</p>
-          <p className="text-6xl font-black text-emerald-600 drop-shadow-md">{score}</p>
-        </div>
-
-        {isHigh && !submitted ? (
-          <form onSubmit={handleSubmitScore} className="mb-8 animate-in fade-in slide-in-from-bottom-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
-              <Trophy className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-              <h3 className="font-bold text-amber-900 mb-4">New High Score!</h3>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-0 text-center font-bold text-gray-700 bg-white shadow-inner mb-3"
-                maxLength={15}
-                required
-              />
-              <button
-                type="submit"
-                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl shadow-md transition-colors"
-              >
-                Submit Score
-              </button>
+        {isHighRun && !submitted ? (
+          <form onSubmit={submitScore} className="summary-name-form">
+            <label htmlFor="run-name">Put your name on the ledger</label>
+            <div>
+              <input id="run-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={15} placeholder="Table name" required />
+              <button type="submit">Record it</button>
             </div>
           </form>
         ) : submitted ? (
-          <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 p-4 rounded-2xl text-center font-bold mb-8 flex items-center justify-center gap-2">
-            Score Saved! <ExternalLink className="w-4 h-4 cursor-pointer hover:text-emerald-900" onClick={() => router.push('/')} />
-          </div>
+          <p className="summary-saved"><Crown size={16} aria-hidden="true" /> The parlor remembers.</p>
         ) : null}
 
-        <div className="flex gap-4">
-          <button
-            onClick={handlePlayAgain}
-            className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white px-6 py-4 rounded-2xl font-bold hover:bg-gray-800 transition-colors shadow-lg active:scale-95"
-          >
-            <RefreshCw className="w-5 h-5" />
-            Play Again
-          </button>
-          
-          <button
-            onClick={() => router.push('/')}
-            className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-6 py-4 rounded-2xl font-bold hover:bg-gray-200 transition-colors shadow-sm active:scale-95 border border-gray-200"
-          >
-            <Home className="w-5 h-5" />
-            Home
-          </button>
+        <div className="summary-actions-v2">
+          <button type="button" onClick={playAgain} className="summary-primary"><Play size={17} fill="currentColor" aria-hidden="true" /> Run it back</button>
+          <button type="button" onClick={leaveTable} className="summary-secondary"><ArrowLeft size={17} aria-hidden="true" /> Leave table</button>
         </div>
-
-      </div>
-    </div>
+        <button type="button" onClick={playAgain} className="summary-quiet"><RotateCcw size={14} aria-hidden="true" /> Fresh wall, fresh luck</button>
+      </section>
+    </main>
   );
 }

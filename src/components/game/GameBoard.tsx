@@ -1,141 +1,192 @@
-import React from 'react';
+'use client';
+
+import { useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, Eye, Flame, LockKeyhole, Sparkles } from 'lucide-react';
+import { HONOR_NAMES, Tile } from '@/lib/gameEngine';
 import { useGameStore } from '@/store/gameStore';
-import { MahjongTile } from '../ui/MahjongTile';
 import { BettingControls } from './BettingControls';
 import { DeckStats } from './DeckStats';
 import { HistoryView } from './HistoryView';
-import { motion, AnimatePresence } from 'framer-motion';
-import { RollingNumber } from '../ui/RollingNumber';
-import { Tile } from '@/lib/gameEngine';
+import { MahjongTile } from '../ui/MahjongTile';
+import { cn } from '@/lib/utils';
 
-const rackTiles = Array.from({ length: 11 });
-
-function Rack({ side }: { side: 'top' | 'left' | 'right' }) {
-  const wrapperClass = {
-    top: 'absolute left-1/2 top-[5.5%] -translate-x-1/2 scale-[0.85]',
-    left: 'absolute left-[3.5%] top-1/2 -translate-y-1/2 scale-[0.85]',
-    right: 'absolute right-[3.5%] top-1/2 -translate-y-1/2 scale-[0.85]',
-  }[side];
-
-  const orientation = side === 'top' ? 'top' : side;
-
+function Dealer({ mood }: { mood: 'neutral' | 'watching' | 'win' | 'loss' }) {
   return (
-    <div className={wrapperClass} aria-hidden="true">
-      <div className="flex gap-1.5">
-        {rackTiles.map((_, index) => (
-          <MahjongTile
-            key={`${side}-rack-${index}`}
-            tile={{ id: `${side}-${index}`, suite: 'wind', name: 'East Wind', baseValue: 5, isNumber: false }}
-            size="rack"
-            orientation={orientation}
-            faceDown
-            muted
-          />
-        ))}
+    <div className={cn('dealer-stage', `dealer-${mood}`)} aria-hidden="true">
+      <div className="dealer-lantern dealer-lantern-left" />
+      <div className="dealer-lantern dealer-lantern-right" />
+      <div className="dealer-art" />
+      <div className="dealer-frame">
+        <span>the house</span>
+        <strong>{mood === 'win' ? 'impressed' : mood === 'loss' ? 'unmoved' : mood === 'watching' ? 'watching' : 'waiting'}</strong>
       </div>
     </div>
   );
 }
 
-function WallStub({ side, count }: { side: 'top' | 'bottom' | 'left' | 'right'; count: number }) {
+function HonorLedger() {
+  const dynamicValues = useGameStore((state) => state.dynamicValues);
+
   return (
-    <div className={`wall-stub wall-stub-${side}`} aria-hidden="true">
-      <span>{count}</span>
+    <div className="honor-ledger" aria-label="Honor tile values">
+      <span className="honor-ledger-title"><Flame size={14} aria-hidden="true" /> honor heat</span>
+      <div className="honor-values">
+        {HONOR_NAMES.map((name) => {
+          const value = dynamicValues[name] ?? 5;
+          return (
+            <span key={name} className={cn('honor-value', value <= 2 && 'is-cold', value >= 8 && 'is-hot')} title={name}>
+              {name.split(' ')[0].slice(0, 1)}<b>{value}</b>
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function River({ tiles }: { tiles: Tile[] }) {
-  const riverTiles = tiles.slice(-18);
+function RevealedHand({ tiles, revealIndex, peekedTile }: { tiles: Tile[]; revealIndex: number; peekedTile: Tile | null }) {
+  const dynamicValues = useGameStore((state) => state.dynamicValues);
 
   return (
-    <div className="river-grid" aria-label="Discard river">
-      {riverTiles.length === 0 ? (
-        <div className="river-empty">river</div>
-      ) : (
-        riverTiles.map((tile, index) => (
-          <MahjongTile
-            key={`river-${tile.id}-${index}`}
-            tile={tile}
-            size="river"
-            muted
-          />
-        ))
-      )}
+    <div className="reveal-hand" aria-label="Next hand being revealed">
+      {tiles.map((tile, index) => {
+        const isVisible = index < revealIndex || tile.id === peekedTile?.id;
+        return (
+          <motion.div
+            key={tile.id}
+            initial={false}
+            animate={{ y: isVisible ? 0 : -4, rotateY: isVisible ? 0 : 180, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 270, damping: 24 }}
+            className="reveal-tile"
+          >
+            <MahjongTile tile={tile} currentValue={dynamicValues[tile.name] ?? tile.baseValue} size="live" faceDown={!isVisible} />
+          </motion.div>
+        );
+      })}
     </div>
+  );
+}
+
+function ResultOverlay() {
+  const lastResult = useGameStore((state) => state.lastResult);
+  const continueRound = useGameStore((state) => state.continueRound);
+
+  if (!lastResult) return null;
+
+  const label = lastResult.result === 'win' ? 'You read it' : lastResult.result === 'loss' ? 'The house takes it' : 'Push';
+  const delta = lastResult.chipDelta === 0 ? 'Wager returned' : `${lastResult.chipDelta > 0 ? '+' : '−'}${Math.abs(lastResult.chipDelta).toLocaleString()} chips`;
+
+  return (
+    <motion.div
+      className={cn('result-overlay-v2', `result-${lastResult.result}`)}
+      initial={{ opacity: 0, scale: 0.9, y: 18 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+      role="status"
+      aria-live="assertive"
+    >
+      <Sparkles size={24} aria-hidden="true" />
+      <p>{label}</p>
+      <strong>{delta}</strong>
+      <span>Next hand: {lastResult.revealedTotal}</span>
+      <button type="button" onClick={continueRound}>Study the next hand <ArrowRight size={16} aria-hidden="true" /></button>
+    </motion.div>
   );
 }
 
 export function GameBoard() {
-  const { currentHand, status, dynamicValues, discardPile, drawPile, handHistory } = useGameStore();
+  const currentHand = useGameStore((state) => state.currentHand);
+  const phase = useGameStore((state) => state.phase);
+  const pendingRound = useGameStore((state) => state.pendingRound);
+  const revealIndex = useGameStore((state) => state.revealIndex);
+  const peekedTile = useGameStore((state) => state.peekedTile);
+  const dynamicValues = useGameStore((state) => state.dynamicValues);
+  const lastResult = useGameStore((state) => state.lastResult);
+  const startReveal = useGameStore((state) => state.startReveal);
+  const advanceReveal = useGameStore((state) => state.advanceReveal);
+  const resolveRound = useGameStore((state) => state.resolveRound);
 
-  if (status !== 'playing' || !currentHand) return null;
-  const latestResult = handHistory[0]?.result;
+  useEffect(() => {
+    if (phase !== 'locked') return undefined;
+    const timer = window.setTimeout(startReveal, 560);
+    return () => window.clearTimeout(timer);
+  }, [phase, startReveal]);
+
+  useEffect(() => {
+    if (phase !== 'revealing' || !pendingRound) return undefined;
+    const isFullyRevealed = revealIndex >= pendingRound.tiles.length;
+    const timer = window.setTimeout(isFullyRevealed ? resolveRound : advanceReveal, isFullyRevealed ? 760 : 380);
+    return () => window.clearTimeout(timer);
+  }, [advanceReveal, pendingRound, phase, revealIndex, resolveRound]);
+
+  if (!currentHand) return null;
+
+  const dealerMood = phase === 'locked' || phase === 'revealing'
+    ? 'watching'
+    : lastResult?.result === 'win'
+      ? 'win'
+      : lastResult?.result === 'loss'
+        ? 'loss'
+        : 'neutral';
+  const isRevealState = Boolean(pendingRound);
 
   return (
-    <div className="game-layout">
-      <section className="table-shell" aria-label="Mahjong table">
-        <div className="wood-trim">
-          <div className="felt-table">
-            <Rack side="top" />
-            <Rack side="left" />
-            <Rack side="right" />
-            <WallStub side="top" count={Math.max(drawPile.length - 18, 0)} />
-            <WallStub side="bottom" count={drawPile.length} />
-            <WallStub side="left" count={discardPile.length} />
-            <WallStub side="right" count={handHistory.length} />
+    <div className="dragon-parlor-layout">
+      <section className="parlor-table-shell" aria-label="Dragon Parlor table">
+        <div className={cn('parlor-table', phase === 'locked' && 'is-locked', phase === 'revealing' && 'is-revealing')}>
+          <Dealer mood={dealerMood} />
+          <div className="parlor-smoke parlor-smoke-left" aria-hidden="true" />
+          <div className="parlor-smoke parlor-smoke-right" aria-hidden="true" />
 
-            <div className="table-center-mark" aria-hidden="true">東</div>
-            <div className="table-score">
-              <span>current hand</span>
-              <RollingNumber value={currentHand.totalValue} className="table-score-number" />
-              {latestResult && <strong className={`result-chip result-${latestResult}`}>{latestResult}</strong>}
-            </div>
-
-            <River tiles={discardPile} />
-
-            <div className="riichi-stick" aria-hidden="true">
-              <span />
-            </div>
-
-            <div className="player-hand" aria-label="Player hand">
-              <AnimatePresence mode="popLayout" initial={false}>
-                {currentHand.tiles.map((tile, i) => (
-                  <motion.div
-                    key={`${tile.id}-${i}`}
-                    initial={{ opacity: 0, x: -70, y: -26, rotate: -8, scale: 0.92 }}
-                    animate={{ opacity: 1, x: 0, y: 0, rotate: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 26, rotate: 6, scale: 0.95 }}
-                    transition={{
-                      type: 'spring',
-                      stiffness: 320,
-                      damping: 28,
-                      delay: i * 0.035,
-                    }}
-                  >
-                    <MahjongTile
-                      tile={tile}
-                      currentValue={dynamicValues[tile.name] ?? tile.baseValue}
-                      size="live"
-                      fanIndex={i - (currentHand.tiles.length - 1) / 2}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
+          <div className="table-objective">
+            <span>current hand</span>
+            <strong>{currentHand.totalValue}</strong>
+            <small>{phase === 'decision' ? 'Set the line, then risk the chips.' : phase === 'locked' ? 'Chips are in the pot.' : phase === 'revealing' ? 'The house reveals…' : 'The wall has changed.'}</small>
           </div>
+
+          <div className="baseline-hand" aria-label="Current hand">
+            {currentHand.tiles.map((tile, index) => (
+              <motion.div
+                key={tile.id}
+                initial={{ opacity: 0, y: 26, rotate: (index - 2) * 3 }}
+                animate={{ opacity: 1, y: 0, rotate: (index - 2) * 2 }}
+                transition={{ type: 'spring', stiffness: 290, damping: 25, delay: index * 0.05 }}
+              >
+                <MahjongTile tile={tile} currentValue={dynamicValues[tile.name] ?? tile.baseValue} size="live" fanIndex={index - 2} />
+              </motion.div>
+            ))}
+          </div>
+
+          <AnimatePresence>
+            {isRevealState && pendingRound && (
+              <motion.div
+                className="reveal-zone"
+                initial={{ opacity: 0, y: -18 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+              >
+                <p><Eye size={14} aria-hidden="true" /> next hand</p>
+                <RevealedHand tiles={pendingRound.tiles} revealIndex={revealIndex} peekedTile={peekedTile} />
+                {phase === 'locked' && <span className="lock-message"><LockKeyhole size={15} aria-hidden="true" /> bet locked</span>}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <HonorLedger />
+          {phase === 'round_complete' && <ResultOverlay />}
         </div>
       </section>
 
-      <aside className="bet-rail" aria-label="Betting controls">
-        <div className="rail-card rail-score">
-          <span>hand value</span>
-          <RollingNumber value={currentHand.totalValue} className="rail-score-number" />
-        </div>
+      <aside className="parlor-rail" aria-label="Table controls and history">
         <DeckStats />
-        <div className="rail-card">
-          <BettingControls />
-        </div>
+        {phase === 'decision' ? <BettingControls /> : (
+          <section className="table-status-card">
+            <span className="panel-kicker">the table is live</span>
+            <strong>{phase === 'locked' ? 'The dealer is taking the pot.' : phase === 'revealing' ? 'Every tile counts.' : 'The wall is settling.'}</strong>
+            <p>{phase === 'locked' ? 'No turning back now.' : phase === 'revealing' ? 'Watch the total, one tile at a time.' : 'Your next hand is ready to read.'}</p>
+          </section>
+        )}
         <HistoryView />
       </aside>
     </div>

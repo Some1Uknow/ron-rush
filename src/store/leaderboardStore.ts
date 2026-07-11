@@ -1,54 +1,65 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type LeaderboardOutcome = 'victory' | 'defeat';
+
 export interface LeaderboardEntry {
   id: string;
   name: string;
-  score: number;
+  endingBankroll: number;
+  rounds: number;
+  outcome: LeaderboardOutcome;
   date: string;
 }
 
 interface LeaderboardState {
   entries: LeaderboardEntry[];
-  addScore: (name: string, score: number) => void;
-  isHighScore: (score: number) => boolean;
+  addRun: (entry: Omit<LeaderboardEntry, 'id' | 'date'>) => void;
+  isLeaderboardRun: (endingBankroll: number, rounds: number, outcome: LeaderboardOutcome) => boolean;
+}
+
+function compareEntries(a: LeaderboardEntry, b: LeaderboardEntry): number {
+  if (a.outcome !== b.outcome) return a.outcome === 'victory' ? -1 : 1;
+  if (a.endingBankroll !== b.endingBankroll) return b.endingBankroll - a.endingBankroll;
+  return a.rounds - b.rounds;
 }
 
 export const useLeaderboardStore = create<LeaderboardState>()(
   persist(
     (set, get) => ({
-      entries: [
-        { id: '1', name: 'Master Wang', score: 2500, date: new Date().toISOString() },
-        { id: '2', name: 'Dragon Lady', score: 1800, date: new Date().toISOString() },
-        { id: '3', name: 'Wind Rider', score: 1200, date: new Date().toISOString() },
-        { id: '4', name: 'Lucky Seven', score: 800, date: new Date().toISOString() },
-        { id: '5', name: 'Novice', score: 300, date: new Date().toISOString() },
-      ],
-      
-      addScore: (name, score) => {
-        const { entries } = get();
-        const newEntry: LeaderboardEntry = {
-          id: Date.now().toString(),
-          name,
-          score,
+      entries: [],
+
+      addRun: (entry) => {
+        const nextEntry: LeaderboardEntry = {
+          ...entry,
+          id: `${Date.now()}-${entry.name}`,
           date: new Date().toISOString(),
         };
 
-        const newEntries = [...entries, newEntry]
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 5); // Keep top 5
-
-        set({ entries: newEntries });
+        set({
+          entries: [...get().entries, nextEntry].toSorted(compareEntries).slice(0, 5),
+        });
       },
 
-      isHighScore: (score) => {
+      isLeaderboardRun: (endingBankroll, rounds, outcome) => {
         const { entries } = get();
         if (entries.length < 5) return true;
-        return score > entries[entries.length - 1].score;
+
+        const candidate: LeaderboardEntry = {
+          id: 'candidate',
+          name: 'Candidate',
+          endingBankroll,
+          rounds,
+          outcome,
+          date: new Date().toISOString(),
+        };
+
+        return compareEntries(candidate, entries[entries.length - 1]) < 0;
       },
     }),
     {
-      name: 'mahjong-leaderboard-storage',
+      name: 'ron-rush-v2-leaderboard',
+      version: 2,
     }
   )
 );
